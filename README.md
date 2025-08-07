@@ -66,7 +66,7 @@ Configuraciones generales del proyecto:
 ## PASO 6:
 
 - Ejecutar la información de la base de datos:
-  - archivo `autorentleon.sql` y ejecutar todo lo que está después de `USE autorentleon;`
+  - archivo `team_trg_ecommerce.sql` y ejecutar todo lo que está después de `USE team_trg_ecommerce;`
 
 ---
 
