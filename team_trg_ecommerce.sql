@@ -31,3 +31,17 @@ INSERT INTO product (uuid, code, sku, name, size, description, presentation, cat
 ('d4e5f6a7b8c901234567890abcdef123', 'ROP-CAM-00004', 'SKU-TSHIRT-L', 'Camiseta Básica de Algodón', 'Talla L', 'Camiseta de algodón suave color blanco.', 'Bolsa individual', 3, 4, 1, 1, TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
 ('e5f6a7b8c9d01234567890abcdef1234', 'ROP-ZAP-00005', 'SKU-NIKE-RUN-42', 'Zapatos para Correr', 'Talla 42', 'Zapatos con amortiguación para largas distancias.', 'Caja de zapatos', 3, 5, 1, 1, TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP);
 
+INSERT INTO provider (name, country, address, phone, email, active, created_by_id, created_at, modified_by_id, updated_at) VALUES
+('TecnoGlobal S.A. de C.V.', 'Estados Unidos', '123 Tech Avenue, Silicon Valley, CA 94043', '+16505550101', 'ventas@tecnoglobal.com', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('OfiSuministros Express', 'El Salvador', 'Calle El Progreso, #52, San Salvador', '+50322223333', 'contacto@ofisuministros.com.sv', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Textiles del Pacífico', 'China', '88 East Nanjing Rd, Shanghai', '+862140050080', 'export@pacifictextiles.cn', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Logística Rápida Internacional', 'Panamá', 'Avenida Balboa, Torre Global, Piso 20, Ciudad de Panamá', '+5073004050', 'operaciones@logirapida.com.pa', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('AgroExportadores SV', 'El Salvador', 'Km 68, Carretera a Santa Ana, Finca La Esperanza', '+50324445555', 'info@agroexportsv.com', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP);
+
+INSERT INTO provider_contact (provider_id, first_name, last_name, phone, email, active, created_by_id, created_at, modified_by_id, updated_at) VALUES
+(1, 'John', 'Smith', '+16505550102', 'j.smith@tecnoglobal.com', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+(1, 'Maria', 'Garcia', '+16505550103', 'm.garcia@tecnoglobal.com', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+(2, 'Carlos', 'Hernández', '+50377778888', 'carlos.h@ofisuministros.com.sv', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+(3, 'Li', 'Wei', '+862140050081', 'li.wei@pacifictextiles.cn', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+(4, 'Isabella', 'Rojas', '+50760070080', 'isabella.rojas@logirapida.com.pa', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP);
+
