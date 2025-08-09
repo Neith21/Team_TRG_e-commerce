@@ -1,5 +1,12 @@
 from django.contrib import admin
 from buy_order.models import BuyOrder
+from buy_order_detail.models import BuyOrderDetail
+
+class BuyOrderDetailInline(admin.TabularInline):
+    model = BuyOrderDetail
+    fields = ('product', 'unit', 'quantity', 'price', 'active')
+    extra = 1
+    can_delete = True
 
 @admin.register(BuyOrder)
 class BuyOrderAdmin(admin.ModelAdmin):
@@ -24,7 +31,7 @@ class BuyOrderAdmin(admin.ModelAdmin):
     )
 
     # AQUI IRA EL INLINE AARON
-    # inlines = [...]
+    inlines = [BuyOrderDetailInline]
 
     def save_model(self, request, obj, form, change):
         if not obj.pk:
@@ -34,7 +41,6 @@ class BuyOrderAdmin(admin.ModelAdmin):
 
     # Nota: El método save_formset es relevante si usas inlines. 
     # Si no tienes un inline para BuyOrder, puedes eliminar este método.
-    """
     def save_formset(self, request, form, formset, change):
         for inline_form in formset.forms:
             if inline_form.has_changed() and not inline_form.cleaned_data.get('DELETE', False):
@@ -43,4 +49,4 @@ class BuyOrderAdmin(admin.ModelAdmin):
                     instance.created_by = request.user
                 instance.modified_by = request.user
         super().save_formset(request, form, formset, change)
-    """
+   
