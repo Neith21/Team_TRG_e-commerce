@@ -15,12 +15,12 @@ class QuotationDetail(models.Model):
     )
     product = models.ForeignKey(
         Product,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         verbose_name="producto"
     )
     unit = models.ForeignKey(
         UnitOfMeasure,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         verbose_name="unidad de medida"
     )
 

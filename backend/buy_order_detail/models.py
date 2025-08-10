@@ -15,12 +15,12 @@ class BuyOrderDetail(models.Model):
     )
     product = models.ForeignKey(
         Product,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         verbose_name="producto"
     )
     unit = models.ForeignKey(
         UnitOfMeasure,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         verbose_name="unidad de medida"
     )
 
@@ -36,6 +36,11 @@ class BuyOrderDetail(models.Model):
         null=True,
         blank=True,
         verbose_name="cantidad"
+    )
+    is_received = models.BooleanField(
+        default=False,
+        verbose_name="recibido",
+        help_text="Marcar si este ítem específico ha sido recibido."
     )
 
     # --- Campos de Auditoría ---

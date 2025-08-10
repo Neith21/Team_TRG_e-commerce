@@ -8,7 +8,7 @@ class BuyOrder(models.Model):
     # Relación con el proveedor
     provider = models.ForeignKey(
         Provider,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT, # Si se borra el proveedor, no se borra la orden
         related_name='purchase_orders',
         verbose_name="proveedor"
     )
@@ -16,7 +16,9 @@ class BuyOrder(models.Model):
     # Relación con la cotización
     quotation = models.ForeignKey(
         Quotation,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL, # Si se borra la cotización, no se borra la orden
+        null=True,
+        blank=True,
         related_name='purchase_orders',
         verbose_name="cotización"
     )
@@ -28,6 +30,8 @@ class BuyOrder(models.Model):
     code = models.CharField(
         max_length=100,
         unique=True,
+        blank=True,
+        editable=False,
         verbose_name="código de orden",
         help_text="Código único para la orden de compra."
     )
@@ -37,7 +41,7 @@ class BuyOrder(models.Model):
     )
 
     status = models.BooleanField(
-        default=None,
+        default=False,
         verbose_name="estatus",
         help_text="Marcar el estatus de la orden."
     )
