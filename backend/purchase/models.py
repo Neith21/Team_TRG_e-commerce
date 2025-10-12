@@ -1,49 +1,48 @@
 from django.conf import settings
 from django.db import models
+from buy_order.models import BuyOrder
 from provider.models import Provider
-from quotation.models import Quotation
 
-class BuyOrder(models.Model):
+class Purchase(models.Model):
+    # --- Relación Clave ---
+    buy_order = models.ForeignKey(
+        BuyOrder,
+        on_delete=models.PROTECT,
+        related_name='purchases',
+        verbose_name="orden de compra",
+        unique=True,
+        help_text="Orden de compra a partir de la cual se genera esta compra."
+    )
 
-    # Relación con el proveedor
+    # --- Campos de la Compra ---
+    invoice_number = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="número de factura",
+        help_text="Número de factura o comprobante de crédito fiscal."
+    )
     provider = models.ForeignKey(
         Provider,
-        on_delete=models.PROTECT, # Si se borra el proveedor, no se borra la orden
-        related_name='purchase_orders',
-        verbose_name="proveedor"
-    )
-
-    # Relación con la cotización
-    quotation = models.ForeignKey(
-        Quotation,
         on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        related_name='purchase_orders',
-        verbose_name="cotización"
+        related_name='+',
+        verbose_name="proveedor",
+        editable=False
     )
-
-    date = models.DateField(
-        verbose_name="fecha de la orden"
-    )
-    
     code = models.CharField(
         max_length=100,
         unique=True,
         blank=True,
         editable=False,
-        verbose_name="código de orden",
-        help_text="Código único para la orden de compra."
+        verbose_name="código de compra",
+        help_text="Código único generado automáticamente para la compra."
     )
-
-    arrival_date = models.DateTimeField(
-        verbose_name="fecha de llegada"
+    date = models.DateField(
+        verbose_name="fecha de compra"
     )
-
     is_approved = models.BooleanField(
     default=False,
     verbose_name="aprobada",
-    help_text="Marcar si la orden de compra ha sido aprobada."
+    help_text="Marcar si la compra ha sido aprobada."
     )
 
     # --- Campos de Auditoría ---
@@ -54,20 +53,19 @@ class BuyOrder(models.Model):
     updated_at = models.DateTimeField(auto_now=True, verbose_name="última modificación")
 
     def __str__(self):
-        return f"Orden de Compra {self.code} - {self.provider.name}"
+        return f"Compra {self.invoice_number} (Orden: {self.buy_order.code})"
 
     def save(self, *args, **kwargs):
-
         if not self.pk:
             super().save(*args, **kwargs)
-            # Genera el código usando la fecha y el ID. Ej: COT-20250809-00001
+            # Genera el código usando la fecha y el ID. Ej: PUR-20251011-00001
             date_str = self.date.strftime('%Y%m%d')
-            self.code = f"BUY-{date_str}-{self.pk:05d}"
+            self.code = f"PUR-{date_str}-{self.pk:05d}"
             kwargs['force_insert'] = False
         super().save(*args, **kwargs)
 
     class Meta:
-        db_table = 'buy_order'
-        verbose_name = 'Orden de Compra'
-        verbose_name_plural = 'Ordenes de Compras'
+        db_table = 'purchase'
+        verbose_name = 'Compra'
+        verbose_name_plural = 'Compras'
         ordering = ['-date']

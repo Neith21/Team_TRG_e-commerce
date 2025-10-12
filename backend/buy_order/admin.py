@@ -3,6 +3,10 @@ from buy_order.models import BuyOrder
 from buy_order_detail.models import BuyOrderDetail
 from quotation.models import Quotation
 from django.utils import timezone
+from django.utils.html import format_html
+from django.urls import reverse
+from .models import BuyOrder
+from buy_order_detail.models import BuyOrderDetail
 
 class BuyOrderDetailInline(admin.TabularInline):
     model = BuyOrderDetail
@@ -18,8 +22,8 @@ class BuyOrderDetailInline(admin.TabularInline):
 class BuyOrderAdmin(admin.ModelAdmin):
 
     # --- Vista de Lista ---
-    list_display = ('code', 'provider', 'quotation', 'date', 'arrival_date', 'status', 'active')
-    list_filter = ('status', 'active', 'provider', 'date')
+    list_display = ('code', 'provider', 'quotation', 'date', 'compra_asociada', 'is_approved', 'active')
+    list_filter = ('is_approved', 'active', 'provider', 'date')
     search_fields = ('code', 'provider__name', 'quotation__code')
     ordering = ('-date',)
 
@@ -30,7 +34,7 @@ class BuyOrderAdmin(admin.ModelAdmin):
             'description': 'Al crear, seleccione una cotización. El proveedor, la fecha y los detalles se llenarán automáticamente.'
         }),
         ("Información de la Orden", {
-            'fields': ('provider', 'date', 'status', 'active', 'code')
+            'fields': ('provider', 'date', 'is_approved', 'active', 'code')
         }),
         ('Información de Auditoría', {
             'classes': ('collapse',),
@@ -39,6 +43,24 @@ class BuyOrderAdmin(admin.ModelAdmin):
     )
 
     inlines = []
+
+    def has_change_permission(self, request, obj=None):
+        if obj is not None and obj.purchases.exists():
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None and obj.purchases.exists():
+            return False
+        return super().has_delete_permission(request, obj)
+
+    def compra_asociada(self, obj):
+        purchase = obj.purchases.first()
+        if purchase:
+            url = reverse('admin:purchase_purchase_change', args=[purchase.pk])
+            return format_html(f'<a href="{url}">{purchase.invoice_number}</a>')
+        return "N/A"
+    compra_asociada.short_description = "Nº Factura Compra"
 
     def get_readonly_fields(self, request, obj=None):
         base_readonly = ['code', 'provider', 'created_at', 'updated_at', 'created_by', 'modified_by']

@@ -58,6 +58,8 @@ INSTALLED_APPS = [
     'quotation_detail',
     'buy_order',
     'buy_order_detail',
+    'purchase',
+    'purchase_detail',
 ]
 
 MIDDLEWARE = [
