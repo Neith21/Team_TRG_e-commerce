@@ -8,7 +8,7 @@ class ProviderContact(models.Model):
     # Relación con el proveedor
     provider = models.ForeignKey(
         Provider,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='contacts',
         verbose_name="proveedor"
     )

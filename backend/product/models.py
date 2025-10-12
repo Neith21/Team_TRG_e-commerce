@@ -48,7 +48,8 @@ class Product(models.Model):
         show_all=False,
         auto_choose=True,
         sort=True,
-        verbose_name="subcategoría"
+        verbose_name="subcategoría",
+        on_delete=models.PROTECT
     )
     purchase_unit = models.ForeignKey(
         UnitOfMeasure,

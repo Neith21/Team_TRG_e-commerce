@@ -16,7 +16,7 @@ class BuyOrder(models.Model):
     # Relación con la cotización
     quotation = models.ForeignKey(
         Quotation,
-        on_delete=models.SET_NULL, # Si se borra la cotización, no se borra la orden
+        on_delete=models.PROTECT,
         null=True,
         blank=True,
         related_name='purchase_orders',

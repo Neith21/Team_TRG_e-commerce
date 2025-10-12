@@ -1,20 +1,20 @@
 from django.contrib import admin
-from quotation.models import Quotation
-from quotation_detail.models import QuotationDetail 
+from django.utils.html import format_html
+from django.urls import reverse
+from .models import Quotation
+from quotation_detail.models import QuotationDetail
 
 class QuotationDetailInline(admin.TabularInline):
-
     model = QuotationDetail
     fields = ('product', 'unit', 'required_quantity', 'price', 'approved_quantity', 'is_approved', 'active')
     extra = 1
     can_delete = True
 
-
 @admin.register(Quotation)
 class QuotationAdmin(admin.ModelAdmin):
 
     # --- Vista de Lista ---
-    list_display = ('code', 'provider', 'date', 'is_approved', 'active')
+    list_display = ('code', 'provider', 'date', 'is_approved', 'orden_de_compra_asociada', 'active') # Campo nuevo
     list_filter = ('is_approved', 'active', 'provider', 'date')
     search_fields = ('code', 'provider__name')
     ordering = ('-date',)
@@ -33,6 +33,24 @@ class QuotationAdmin(admin.ModelAdmin):
     )
 
     inlines = [QuotationDetailInline]
+
+    def has_change_permission(self, request, obj=None):
+        if obj is not None and obj.purchase_orders.exists():
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None and obj.purchase_orders.exists():
+            return False
+        return super().has_delete_permission(request, obj)
+
+    def orden_de_compra_asociada(self, obj):
+        buy_order = obj.purchase_orders.first()
+        if buy_order:
+            url = reverse('admin:buy_order_buyorder_change', args=[buy_order.pk])
+            return format_html(f'<a href="{url}">{buy_order.code}</a>')
+        return "N/A"
+    orden_de_compra_asociada.short_description = "Orden de Compra"
 
     def save_model(self, request, obj, form, change):
         if not obj.pk:

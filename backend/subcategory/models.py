@@ -7,7 +7,7 @@ class Subcategory(models.Model):
     # Relación con la categoría padre
     category = models.ForeignKey(
         Category,
-        on_delete=models.CASCADE, # Si se borra la categoría, se borran sus subcategorías
+        on_delete=models.PROTECT, # Evita borrar una categoría si tiene subcategorías
         related_name='subcategories', # Para acceder desde una categoría: mi_categoria.subcategories.all()
         verbose_name="categoría padre"
     )
