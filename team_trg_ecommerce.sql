@@ -89,11 +89,10 @@ INSERT INTO quotation_detail (quotation_id, product_id, unit_id, required_quanti
 (10, 4, 4, 50, 12.00, 50, TRUE, TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
 (10, 5, 1, 100, 89.00, 100, TRUE, TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP);
 
-INSERT INTO buy_order (provider_id, quotation_id, date, code, arrival_date, status, active, created_by_id, created_at, modified_by_id, updated_at) VALUES
+INSERT INTO buy_order (provider_id, quotation_id, date, code, arrival_date, is_approved, active, created_by_id, created_at, modified_by_id, updated_at) VALUES
 (1, 1, '2025-08-10', 'BUY-20250810-00001', '2025-08-20 17:00:00', FALSE, TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
 (3, 3, '2025-08-10', 'BUY-20250810-00002', '2025-08-22 17:00:00', FALSE, TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
 (5, 5, '2025-08-11', 'BUY-20250811-00003', '2025-08-25 17:00:00', FALSE, TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP);
-
 
 INSERT INTO buy_order_detail (buy_order_id, product_id, unit_id, price, quantity, is_received, active, created_by_id, created_at, modified_by_id, updated_at) VALUES
 (1, 1, 1, 799.99, 10, FALSE, TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),

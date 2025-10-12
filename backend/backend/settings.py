@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'buy_order_detail',
     'purchase',
     'purchase_detail',
+    'proration',
 ]
 
 MIDDLEWARE = [
