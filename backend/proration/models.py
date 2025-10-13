@@ -86,7 +86,7 @@ class Proration(models.Model):
             
             # Calcular costo unitario prorrateado
             if item.quantity > 0:
-                item.prorated_unit_cost = total_item_cost / item.quantity
+                item.prorated_unit_cost = total_item_cost
             else:
                 item.prorated_unit_cost = Decimal('0.0')
             
