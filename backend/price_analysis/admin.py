@@ -49,7 +49,7 @@ class PriceAnalysisAdmin(admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "proration":
-            queryset = Proration.objects.filter(priceanalysis__isnull=True)
+            queryset = Proration.objects.filter(is_approved=True, priceanalysis__isnull=True)
 
             if 'object_id' in request.resolver_match.kwargs:
                 try:

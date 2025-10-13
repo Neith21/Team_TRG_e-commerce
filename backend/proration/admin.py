@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.contrib import messages
 from .models import Proration, ProrationItem, ProrationExpense
 from purchase.models import Purchase
+from django.utils.html import format_html
+from django.urls import reverse
 
 class ProrationItemInline(admin.TabularInline):
     model = ProrationItem
@@ -25,16 +27,33 @@ class ProrationExpenseInline(admin.TabularInline):
 @admin.register(Proration)
 class ProrationAdmin(admin.ModelAdmin):
     list_display = (
-        'code', 'get_provider', 'policy_number', 'total_fob', 'active',
-        'freight', 'dai', 'total_expenses', 'total_prorated_cost'
+        'code', 'get_provider', 'policy_number', 'is_approved', 'analisis_asociado',
+        'total_fob', 'active'
     )
     inlines = [ProrationItemInline, ProrationExpenseInline]
     actions = ['run_proration_action']
 
+    def has_change_permission(self, request, obj=None):
+        if obj is not None and hasattr(obj, 'priceanalysis'):
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None and hasattr(obj, 'priceanalysis'):
+            return False
+        return super().has_delete_permission(request, obj)
+    
+    def analisis_asociado(self, obj):
+        if hasattr(obj, 'priceanalysis'):
+            url = reverse('admin:price_analysis_priceanalysis_change', args=[obj.priceanalysis.pk])
+            return format_html(f'<a href="{url}">{obj.priceanalysis.code}</a>')
+        return "Disponible"
+    analisis_asociado.short_description = 'Análisis Asociado'
+
     def get_readonly_fields(self, request, obj=None):
         base_readonly = (
-            'code', 'date', 'get_provider', 'get_origin_country', 
-            'total_fob', 'freight', 'dai', 'total_expenses', 'total_prorated_cost',
+            'code', 'date', 'get_provider', 'get_origin_country', 'total_fob', 
+            'freight', 'dai', 'total_expenses', 'total_prorated_cost',
             'created_by', 'created_at', 'modified_by', 'updated_at'
         )
         if obj:
@@ -48,7 +67,7 @@ class ProrationAdmin(admin.ModelAdmin):
                 ("Documentos de Importación (Opcional)", {'fields': ('import_invoice_number', 'import_invoice_date', 'policy_number', 'policy_date')}),
             )
         return (
-            ("Información General", {'fields': ('code', 'date', 'get_provider', 'get_origin_country', 'purchase', 'active')}),
+            ("Información General", {'fields': ('code', 'date', 'get_provider', 'get_origin_country', 'purchase', 'is_approved', 'active')}),
             ("Documentos de Importación (Opcional)", {'fields': ('import_invoice_number', 'import_invoice_date', 'policy_number', 'policy_date')}),
             ("Totales Calculados", {'fields': ('total_fob', 'freight', 'dai', 'total_expenses', 'total_prorated_cost'), 'classes': ('collapse',)}),
             ("Auditoría", {'fields': ('created_by', 'created_at', 'modified_by', 'updated_at'), 'classes': ('collapse',)}),

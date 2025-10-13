@@ -19,7 +19,7 @@ class Proration(models.Model):
     dai = models.DecimalField(max_digits=12, decimal_places=2, default=0.0, editable=False, verbose_name="DAI (Aranceles)")
     total_expenses = models.DecimalField(max_digits=12, decimal_places=2, default=0.0, editable=False, verbose_name="Total Gastos al Costo")
     total_prorated_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.0, editable=False, verbose_name="Costo Total Prorrateado")
-
+    is_approved = models.BooleanField(default=False, verbose_name="Prorrateo Aprobado", help_text="Marcar cuando el prorrateo esté finalizado y listo para el análisis de precios.")
     active = models.BooleanField(default=True, verbose_name="Activo")
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     created_at = models.DateTimeField(auto_now_add=True)
