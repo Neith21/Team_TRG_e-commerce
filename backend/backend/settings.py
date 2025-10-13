@@ -61,6 +61,9 @@ INSTALLED_APPS = [
     'purchase',
     'purchase_detail',
     'proration',
+    'price_analysis',
+    'price_analysis_detail',
+    'price_history',
 ]
 
 MIDDLEWARE = [

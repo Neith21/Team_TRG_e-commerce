@@ -55,7 +55,7 @@ class PurchaseAdmin(admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "buy_order":
-            kwargs["queryset"] = BuyOrder.objects.filter(is_approved=True, purchase__isnull=True)
+            kwargs["queryset"] = BuyOrder.objects.filter(is_approved=True, purchases__isnull=True)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def save_model(self, request, obj, form, change):
