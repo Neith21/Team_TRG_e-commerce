@@ -94,14 +94,40 @@ class ProrationAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
         
         if not change and obj.purchase:
-            for detail in obj.purchase.details.all():
-                ProrationItem.objects.create(
-                    proration=obj, product=detail.product, quantity=detail.quantity, 
-                    fob_unit_value=detail.price,
-                    created_by=request.user,
-                    modified_by=request.user
-                )
+            received_details = obj.purchase.details.filter(is_received=True, active=True)
+
+            items_created_count = 0
+            items_skipped_count = 0
+
+            for detail in received_details:
+
+                qty_to_use = detail.verified_quantity
+
+                if qty_to_use > 0:
+                    ProrationItem.objects.create(
+                        proration=obj,
+                        product=detail.product,
+                        quantity=qty_to_use,
+                        fob_unit_value=detail.price,
+                        created_by=request.user,
+                        modified_by=request.user
+                    )
+                    items_created_count += 1
+                else:
+                    items_skipped_count += 1
             obj.run_proration()
+
+            if items_skipped_count > 0:
+                messages.warning(
+                    request, 
+                    f"Atención: Se omitieron {items_skipped_count} productos del prorrateo porque su 'Cantidad Verificada' era 0."
+                )
+            
+            if items_created_count == 0:
+                messages.error(
+                    request, 
+                    "Error: No se agregaron items al prorrateo. Verifique que haya ingresado las cantidades verificadas en la Compra."
+                )
 
     def save_related(self, request, form, formsets, change):
         """Se ejecuta después de guardar los inlines (gastos)"""

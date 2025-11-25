@@ -17,6 +17,11 @@ class PurchaseDetail(models.Model):
 
     # --- Campos del Detalle ---
     quantity = models.PositiveIntegerField(verbose_name="cantidad")
+    verified_quantity = models.PositiveIntegerField(
+        default=0,
+        verbose_name="cantidad verificada",
+        help_text="Cantidad real contada físicamente en bodega."
+    )
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="precio unitario")
     is_received = models.BooleanField(
         default=False,

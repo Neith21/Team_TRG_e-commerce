@@ -8,7 +8,7 @@ from django.urls import reverse
 
 class PurchaseDetailInline(admin.TabularInline):
     model = PurchaseDetail
-    fields = ('product', 'unit', 'quantity', 'price', 'is_received')
+    fields = ('product', 'unit', 'quantity', 'verified_quantity', 'price', 'is_received')
     readonly_fields = ('product', 'unit', 'quantity', 'price')
     extra = 0
     can_delete = False
@@ -19,10 +19,12 @@ class PurchaseDetailInline(admin.TabularInline):
 @admin.register(Purchase)
 class PurchaseAdmin(admin.ModelAdmin):
     # --- Vista de Lista ---
-    list_display = ('code', 'invoice_number', 'buy_order', 'provider', 'date', 'prorrateo_asociado', 'is_approved', 'active')
+    list_display = ('code', 'invoice_number', 'batch', 'buy_order', 'provider', 'date', 'prorrateo_asociado', 'is_approved', 'active')
     list_filter = ('is_approved', 'active', 'provider', 'date')
-    search_fields = ('code', 'invoice_number', 'buy_order__code', 'provider__name')
+    search_fields = ('code', 'invoice_number', 'batch', 'buy_order__code', 'provider__name')
     ordering = ('-date',)
+
+    readonly_fields = ('code', 'batch', 'provider', 'created_at', 'updated_at', 'created_by', 'modified_by')
 
     inlines = []
 
@@ -48,14 +50,14 @@ class PurchaseAdmin(admin.ModelAdmin):
     prorrateo_asociado.short_description = "Prorrateo Asociado"
 
     def get_readonly_fields(self, request, obj=None):
-        base_readonly = ['code', 'provider', 'created_at', 'updated_at', 'created_by', 'modified_by']
+        base_readonly = list(self.readonly_fields)
         if obj:
             return base_readonly + ['buy_order', 'invoice_number']
         return base_readonly
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "buy_order":
-            kwargs["queryset"] = BuyOrder.objects.filter(is_approved=True, purchases__isnull=True)
+            kwargs["queryset"] = BuyOrder.objects.filter(is_approved=True, purchase__isnull=True)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def save_model(self, request, obj, form, change):
@@ -65,11 +67,19 @@ class PurchaseAdmin(admin.ModelAdmin):
             obj.provider = obj.buy_order.provider
 
             super().save_model(request, obj, form, change)
-            for detail in obj.buy_order.details.all():
+
+            received_details = obj.buy_order.details.filter(is_received=True, active=True)
+
+            for detail in received_details:
                 PurchaseDetail.objects.create(
-                    purchase=obj, product=detail.product, unit=detail.unit,
-                    quantity=detail.quantity, price=detail.price,
-                    created_by=request.user, modified_by=request.user
+                    purchase=obj,
+                    product=detail.product,
+                    unit=detail.unit,
+                    quantity=detail.quantity,
+                    price=detail.price,
+                    active=True,
+                    created_by=request.user,
+                    modified_by=request.user
                 )
             return
 
@@ -81,7 +91,7 @@ class PurchaseAdmin(admin.ModelAdmin):
             return ((None, {'fields': ('buy_order', 'invoice_number', 'date')}),)
         return (
             ("Información Principal", {
-                'fields': ('code', 'invoice_number', 'buy_order', 'provider', 'date', 'is_approved', 'active')
+                'fields': ('code', 'batch', 'invoice_number', 'buy_order', 'provider', 'date', 'is_approved', 'active')
             }),
             ('Información de Auditoría', {
                 'classes': ('collapse',),

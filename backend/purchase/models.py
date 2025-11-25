@@ -2,13 +2,14 @@ from django.conf import settings
 from django.db import models
 from buy_order.models import BuyOrder
 from provider.models import Provider
+import uuid
 
 class Purchase(models.Model):
     # --- Relación Clave ---
     buy_order = models.ForeignKey(
         BuyOrder,
         on_delete=models.PROTECT,
-        related_name='purchases',
+        related_name='purchase',
         verbose_name="orden de compra",
         unique=True,
         help_text="Orden de compra a partir de la cual se genera esta compra."
@@ -35,6 +36,13 @@ class Purchase(models.Model):
         editable=False,
         verbose_name="código de compra",
         help_text="Código único generado automáticamente para la compra."
+    )
+    batch = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,
+        verbose_name="lote (batch)",
+        help_text="Código de lote único generado automáticamente."
     )
     date = models.DateField(
         verbose_name="fecha de compra"

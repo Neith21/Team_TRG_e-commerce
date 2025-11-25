@@ -64,6 +64,8 @@ INSTALLED_APPS = [
     'price_analysis',
     'price_analysis_detail',
     'price_history',
+    'inventory_movement_type',
+    'branch',
 ]
 
 MIDDLEWARE = [
