@@ -45,17 +45,17 @@ class BuyOrderAdmin(admin.ModelAdmin):
     inlines = []
 
     def has_change_permission(self, request, obj=None):
-        if obj is not None and obj.purchases.exists():
+        if obj is not None and obj.purchase.exists():
             return False
         return super().has_change_permission(request, obj)
 
     def has_delete_permission(self, request, obj=None):
-        if obj is not None and obj.purchases.exists():
+        if obj is not None and obj.purchase.exists():
             return False
         return super().has_delete_permission(request, obj)
 
     def compra_asociada(self, obj):
-        purchase = obj.purchases.first()
+        purchase = obj.purchase.first()
         if purchase:
             url = reverse('admin:purchase_purchase_change', args=[purchase.pk])
             return format_html(f'<a href="{url}">{purchase.invoice_number}</a>')
