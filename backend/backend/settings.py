@@ -68,6 +68,8 @@ INSTALLED_APPS = [
     'branch',
     'inventory',
     'kardex',
+    'transfers',
+    'vehicle',
 ]
 
 MIDDLEWARE = [

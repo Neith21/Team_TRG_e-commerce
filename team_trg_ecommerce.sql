@@ -106,3 +106,35 @@ INSERT INTO buy_order_detail (buy_order_id, product_id, unit_id, price, quantity
 (3, 2, 1, 1280.00, 2, FALSE, TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
 (3, 3, 1, 430.00, 1, FALSE, TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
 (3, 4, 1, 12.00, 10, FALSE, TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP);
+
+INSERT INTO branch (name, branch_type, address, department, municipality, phone, active, created_by_id, created_at, modified_by_id, updated_at) VALUES
+('Bodega Central Soyapango', 'storage', 'Boulevard del Ejército Nacional, Km 5.5, Zona Industrial', 'SS', 'Soyapango', '2250-9900', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Sucursal Escalón', 'branch', 'Paseo General Escalón y 79 Avenida Norte, Local 3', 'SS', 'San Salvador', '2263-4455', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Sucursal Merliot', 'branch', 'Calle Chiltiupán, Centro Comercial Plaza Merliot, Nivel 2', 'LL', 'Santa Tecla', '2288-1234', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Bodega Occidente', 'storage', 'Carretera a Metapán, Km 65, Zona Franca', 'SA', 'Santa Ana', '2440-8080', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Sucursal Metrocentro SA', 'branch', 'Av. Independencia Sur, Metrocentro Santa Ana, Local 15', 'SA', 'Santa Ana', '2441-2020', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Sucursal San Miguel', 'branch', 'Av. Roosevelt Sur, Centro Comercial Metrocentro SM', 'SM', 'San Miguel', '2660-5050', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP);
+
+INSERT INTO inventory_movement_type (name, code, flow, description, active, created_by_id, created_at, modified_by_id, updated_at) VALUES
+-- Entradas (+)
+('Compras Locales/Importación', 'PURCHASE', 'in', 'Ingreso de mercadería proveniente de órdenes de compra a proveedores.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Traslado (Entrada)', 'TRANS-IN', 'in', 'Recepción de inventario enviado desde otra sucursal o bodega interna.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Devolución de Cliente', 'CUST-RET', 'in', 'Reingreso de productos devueltos por clientes (garantía o cambio).', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Ajuste de Inventario (+)', 'ADJ-POS', 'in', 'Corrección positiva manual por conteo físico o hallazgo de mercadería.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Otras Entradas', 'OTH-IN', 'in', 'Ingreso general de otro tipo de entradas.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+
+-- Salidas (-)
+('Venta Directa', 'SALE', 'out', 'Salida de mercadería por facturación y entrega al cliente.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Traslado (Salida)', 'TRANS-OUT', 'out', 'Envío de inventario hacia otra sucursal o bodega.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Devolución a Proveedor', 'PROV-RET', 'out', 'Salida de productos defectuosos devueltos al proveedor.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Avería / Merma', 'DAMAGE', 'out', 'Baja de inventario por daños, vencimiento, robo o pérdida.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Uso Interno', 'INT-USE', 'out', 'Consumo de productos para uso de la propia empresa (papelería, limpieza, etc.).', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Ajuste de Inventario (-)', 'ADJ-NEG', 'out', 'Corrección negativa manual por diferencias en conteo físico.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('Otras Salidas', 'OTH-OUT', 'in', 'Salida general de otro tipo de salidas.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP);
+
+INSERT INTO vehicle (brand, model, plate, driver_name, year, vehicle_type, max_capacity_kg, description, active, created_by_id, created_at, modified_by_id, updated_at) VALUES 
+('TOYOTA', 'HIACE', 'P-123-456', 'Juan Pérez', 2022, 'panel', 1200.00, 'Panel principal para reabastecimiento de sucursales metropolitanas.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('ISUZU', 'NPR', 'C-987-654', 'Carlos López', 2020, 'light_truck', 4500.00, 'Camión de 4 toneladas asignado a rutas de occidente.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('HONDA', 'CARGO 150', 'M-555-999', 'Pedro Martínez', 2023, 'motorcycle', 150.00, 'Unidad rápida para documentos y repuestos pequeños.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('FREIGHTLINER', 'M2 106', 'C-111-222', 'Roberto Sánchez', 2019, 'heavy_truck', 12000.00, 'Cabezal para movimiento de carga pesada desde aduanas.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('NISSAN', 'FRONTIER', 'P-888-777', 'Miguel Ángel', 2024, 'sedan', 1100.00, 'Vehículo de apoyo logístico y supervisión.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP);
