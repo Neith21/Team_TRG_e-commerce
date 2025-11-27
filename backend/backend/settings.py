@@ -66,6 +66,8 @@ INSTALLED_APPS = [
     'price_history',
     'inventory_movement_type',
     'branch',
+    'inventory',
+    'kardex',
 ]
 
 MIDDLEWARE = [
