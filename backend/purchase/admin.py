@@ -6,6 +6,7 @@ from buy_order.models import BuyOrder
 from django.utils.html import format_html
 from django.urls import reverse
 from django.contrib import messages
+from inventory.models import Inventory
 
 class PurchaseDetailInline(admin.TabularInline):
     model = PurchaseDetail
@@ -32,15 +33,15 @@ class PurchaseAdmin(admin.ModelAdmin):
     actions = ['process_inventory_entry']
 
     def has_change_permission(self, request, obj=None):
-        """Impide la edición si la compra ya tiene un prorrateo asociado."""
-        if obj is not None and hasattr(obj, 'proration'):
-            return False  # Deniega el permiso de cambio si existe un prorrateo
+        if obj is not None:
+            if hasattr(obj, 'proration') or Inventory.objects.filter(batch=obj.batch).exists():
+                return False
         return super().has_change_permission(request, obj)
 
     def has_delete_permission(self, request, obj=None):
-        """Impide el borrado si la compra ya tiene un prorrateo asociado."""
-        if obj is not None and hasattr(obj, 'proration'):
-            return False  # Deniega el permiso de borrado si existe un prorrateo
+        if obj is not None:
+            if hasattr(obj, 'proration') or Inventory.objects.filter(batch=obj.batch).exists():
+                return False
         return super().has_delete_permission(request, obj)
 
     def prorrateo_asociado(self, obj):

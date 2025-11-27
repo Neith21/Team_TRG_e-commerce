@@ -186,6 +186,7 @@ class TransferAdmin(admin.ModelAdmin):
                 to_take = min(batch_record.quantity, qty_remaining)
 
                 batch_record.quantity -= to_take
+                batch_record.original_quantity -= to_take
                 batch_record.modified_by = request.user
                 batch_record.save()
 
@@ -209,7 +210,7 @@ class TransferAdmin(admin.ModelAdmin):
                     batch=batch_record.batch,
                     defaults={
                         'entry_number': uuid.uuid4(),
-                        'original_quantity': to_take,
+                        'original_quantity': 0,
                         'quantity': 0,
                         'cost': batch_record.cost,
                         'created_by': request.user,
@@ -219,12 +220,10 @@ class TransferAdmin(admin.ModelAdmin):
                 )
 
                 dest_inventory.quantity += to_take
+                dest_inventory.original_quantity += to_take
 
                 if not created:
                     dest_inventory.modified_by = request.user
-                    # Opcional: ¿Quieres actualizar la 'original_quantity' si ya existe? 
-                    # Generalmente 'original' es la cantidad inicial del lote en ESA ubicación.
-                    # Puedes dejarlo así o sumarle también.
                 
                 dest_inventory.save()
 
