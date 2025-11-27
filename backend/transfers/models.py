@@ -33,12 +33,17 @@ class Transfer(models.Model):
         return f"{self.code} ({self.source_branch} -> {self.dest_branch})"
     
     def clean(self):
+        if not self.pk and self.status == 'transit':
+            raise ValidationError({
+                'status': "Una nueva transferencia debe iniciarse en estado 'Picking'. No se puede crear directamente en 'Tránsito'."
+            })
+
         if self.source_branch == self.dest_branch:
             raise ValidationError({
                 'dest_branch': "La sucursal de destino no puede ser la misma que la de origen."
             })
         
-        if self.vehicle:
+        if self.status in ['picking', 'transit'] and self.vehicle:    
             busy_transfer = Transfer.objects.filter(
                 vehicle=self.vehicle,
                 status__in=['picking', 'transit']

@@ -44,6 +44,7 @@ class Inventory(models.Model):
         verbose_name = 'Inventario (Por Lote)'
         verbose_name_plural = 'Inventario (Por Lotes)'
         ordering = ['-created_at']
+        unique_together = ('branch', 'product', 'batch')
 
     def __str__(self):
         return f"{self.product.name} - Lote: {str(self.batch)[:8]}... (Q: {self.quantity})"

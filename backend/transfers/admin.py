@@ -89,7 +89,6 @@ class TransferAdmin(admin.ModelAdmin):
             if not obj:
                 status_field.choices = [
                     ('picking', 'En Preparación (Picking)'),
-                    ('transit', 'En Tránsito'),
                 ]
 
             elif obj.status == 'picking':
@@ -114,30 +113,30 @@ class TransferAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if not change:
             obj.created_by = request.user
-            obj.modified_by = request.user
-            super().save_model(request, obj, form, change)
-            return
-
-        old_obj = Transfer.objects.get(pk=obj.pk)
         obj.modified_by = request.user
 
-        if old_obj.status == 'picking' and obj.status == 'transit':
+        old_status = None
+        if change:
+            old_obj = Transfer.objects.get(pk=obj.pk)
+            old_status = old_obj.status
+        else:
+            old_status = 'picking'
+
+        super().save_model(request, obj, form, change)
+        
+        if old_status == 'picking' and obj.status == 'transit':
             try:
                 with transaction.atomic():
                     self.process_inventory_transfer(request, obj)
-                    super().save_model(request, obj, form, change)
             except ValidationError as e:
                 messages.set_level(request, messages.ERROR)
                 messages.error(request, f"Error al procesar traslado: {e.message}")
                 obj.status = 'picking'
+                obj.save(update_fields=['status', 'modified_by', 'updated_at'])
 
-        elif old_obj.status == 'transit' and obj.status == 'received':
-            super().save_model(request, obj, form, change)
-        
-        else:
-            super().save_model(request, obj, form, change)
+        elif old_status == 'transit' and obj.status == 'received':
+            pass
 
-    
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
 
@@ -186,12 +185,11 @@ class TransferAdmin(admin.ModelAdmin):
                 if qty_remaining <= 0: break
                 to_take = min(batch_record.quantity, qty_remaining)
 
-                # 1. Descontar Origen
                 batch_record.quantity -= to_take
                 batch_record.modified_by = request.user
                 batch_record.save()
 
-                # 2. Kardex Salida
+                #Kardex Salida
                 Kardex.objects.create(
                     transaction_id=transfer.pk,
                     document_number=transfer.code,
@@ -205,30 +203,42 @@ class TransferAdmin(admin.ModelAdmin):
                     created_by=request.user
                 )
 
-                # 3. Crear Destino
-                new_batch_uuid = uuid.uuid4()
-                new_inventory = Inventory.objects.create(
+                dest_inventory, created = Inventory.objects.get_or_create(
                     branch=transfer.dest_branch,
                     product=detail.product,
-                    batch=new_batch_uuid,
-                    original_quantity=to_take,
-                    quantity=to_take,
-                    cost=batch_record.cost,
-                    created_by=request.user,
-                    modified_by=request.user
+                    batch=batch_record.batch,
+                    defaults={
+                        'entry_number': uuid.uuid4(),
+                        'original_quantity': to_take,
+                        'quantity': 0,
+                        'cost': batch_record.cost,
+                        'created_by': request.user,
+                        'modified_by': request.user,
+                        'active': True
+                    }
                 )
 
-                # 4. Kardex Entrada
+                dest_inventory.quantity += to_take
+
+                if not created:
+                    dest_inventory.modified_by = request.user
+                    # Opcional: ¿Quieres actualizar la 'original_quantity' si ya existe? 
+                    # Generalmente 'original' es la cantidad inicial del lote en ESA ubicación.
+                    # Puedes dejarlo así o sumarle también.
+                
+                dest_inventory.save()
+
+                #Kardex Entrada
                 Kardex.objects.create(
                     transaction_id=transfer.pk,
                     document_number=transfer.code,
                     movement_type=move_in,
-                    inventory_entry=new_inventory,
+                    inventory_entry=dest_inventory,
                     branch=transfer.dest_branch,
                     product=detail.product,
-                    batch=new_inventory.batch,
+                    batch=dest_inventory.batch,
                     quantity=to_take,
-                    cost=new_inventory.cost,
+                    cost=dest_inventory.cost,
                     created_by=request.user
                 )
 
