@@ -70,6 +70,8 @@ INSTALLED_APPS = [
     'kardex',
     'transfers',
     'vehicle',
+    'client',
+    'sale',
 ]
 
 MIDDLEWARE = [
@@ -169,9 +171,7 @@ USE_TZ = True
 
 STATIC_URL = '/assets/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, 'assets'),
-)
+STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/uploads/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'uploads')
 
