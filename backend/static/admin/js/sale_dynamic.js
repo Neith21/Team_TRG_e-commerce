@@ -6,11 +6,10 @@ window.addEventListener('load', function() {
     }
 
     const $ = django.jQuery;
-    console.log('--- Sale Dynamic JS: MODO DETAILS ---');
+    console.log('--- Sale Dynamic JS: OPTIMIZED ---');
 
     const INLINE_CLASS = '.dynamic-details'; 
     const FORMSET_NAME = 'details'; 
-
     const $branchSelect = $('#id_branch');
     const $saleTypeSelect = $('#id_sale_type');
 
@@ -20,6 +19,17 @@ window.addEventListener('load', function() {
         baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1); 
     } else if (baseUrl.includes('/add/')) {
         baseUrl = baseUrl.replace('add/', '');
+    }
+
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this, args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(function() {
+                func.apply(context, args);
+            }, wait);
+        };
     }
 
     // --- FUNCIONES AJAX ---
@@ -36,7 +46,6 @@ window.addEventListener('load', function() {
             data: { branch_id: branchId },
             success: function(data) {
                 const previousVal = $select.val();
-                
                 $select.empty();
                 $select.append(new Option('---------', ''));
                 
@@ -64,6 +73,7 @@ window.addEventListener('load', function() {
         if (!productId) {
             $priceInput.val('0.00');
             calculateRowTotal($row);
+            debouncedGrandTotal();
             return;
         }
         if (!branchId) return;
@@ -74,10 +84,12 @@ window.addEventListener('load', function() {
             url: baseUrl + 'get-product-price/',
             data: { branch_id: branchId, product_id: productId },
             success: function(data) {
-                $priceInput.val(data.price);
+                if ($priceInput.val() !== data.price) {
+                    $priceInput.val(data.price);
+                }
                 $priceInput.css('opacity', '1');
                 calculateRowTotal($row);
-                calculateGrandTotal();
+                debouncedGrandTotal();
             },
             error: function() {
                 $priceInput.css('opacity', '1');
@@ -102,6 +114,7 @@ window.addEventListener('load', function() {
 
     function calculateGrandTotal() {
         let subtotalAccumulator = 0;
+        let hasActiveRows = false;
         
         $(INLINE_CLASS).each(function() {
             const $row = $(this);
@@ -110,24 +123,25 @@ window.addEventListener('load', function() {
                 !$row.find('.field-product select').val()) {
                 return;
             }
+            hasActiveRows = true;
             subtotalAccumulator += calculateRowTotal($row);
         });
 
         const saleType = $saleTypeSelect.val();
         let tax = 0;
+        let total = subtotalAccumulator;
+        
         if (saleType === 'CCF') {
             tax = subtotalAccumulator * 0.13;
         }
-        const total = subtotalAccumulator + tax;
 
-        $('.field-subtotal .readonly').text(subtotalAccumulator.toFixed(2));
-        $('.field-tax_amount .readonly').text(tax.toFixed(2));
-        $('.field-total .readonly').text(total.toFixed(2));
+        $('.field-subtotal .readonly').text('$' + subtotalAccumulator.toFixed(2));
+        $('.field-tax_amount .readonly').text('$' + tax.toFixed(2));
+        $('.field-total .readonly').text('$' + total.toFixed(2));
     }
 
-    // --- EVENT LISTENERS ---
+    const debouncedGrandTotal = debounce(calculateGrandTotal, 100);
 
-    // Cambio de Sucursal
     $branchSelect.on('change', function() {
         $(INLINE_CLASS).each(function() {
             const $row = $(this);
@@ -137,26 +151,24 @@ window.addEventListener('load', function() {
         });
     });
 
-    // Cambio Tipo Venta
-    $saleTypeSelect.on('change', calculateGrandTotal);
+    $saleTypeSelect.on('change', debouncedGrandTotal);
 
-    // Cambio Producto
     $(document).on('change', INLINE_CLASS + ' .field-product select', function() {
-        updateProductPrice($(this).closest(INLINE_CLASS));
+        const $row = $(this).closest(INLINE_CLASS);
+        const $priceInput = $row.find('.field-price input');
+
+        updateProductPrice($row);
     });
 
-    // Inputs numéricos
     $(document).on('input', INLINE_CLASS + ' input', function() {
         if ($(this).closest('.field-quantity, .field-discount, .field-price').length) {
             calculateRowTotal($(this).closest(INLINE_CLASS));
-            calculateGrandTotal();
+            debouncedGrandTotal();
         }
     });
 
-    // Borrar
-    $(document).on('click', '.delete input[type="checkbox"]', calculateGrandTotal);
+    $(document).on('click', '.delete input[type="checkbox"]', debouncedGrandTotal);
 
-    // NUEVA FILA
     $(document).on('formset:added', function(event, $row, formsetName) {
         if (formsetName === FORMSET_NAME) {
             const $select = $row.find('.field-product select');
@@ -164,17 +176,22 @@ window.addEventListener('load', function() {
         }
     });
 
-    // --- INICIALIZACIÓN ---
+    if ($branchSelect.val()) {
+        $(INLINE_CLASS).each(function() {
+            const $row = $(this);
+            const $select = $row.find('.field-product select');
+            if (!$row.hasClass('empty-form') && $select.children('option').length <= 1) {
+                loadProductsForSelect($select);
+            }
+        });
+    }
+
     setTimeout(function() {
-        if ($branchSelect.val()) {
-            $(INLINE_CLASS).each(function() {
-                const $row = $(this);
-                const $select = $row.find('.field-product select');
-                if (!$row.hasClass('empty-form') && $select.children('option').length <= 1) {
-                    loadProductsForSelect($select);
-                }
-            });
-        }
+        $(INLINE_CLASS).each(function() {
+            if (!$(this).hasClass('empty-form')) {
+                calculateRowTotal($(this));
+            }
+        });
         calculateGrandTotal();
-    }, 500);
+    }, 100);
 });

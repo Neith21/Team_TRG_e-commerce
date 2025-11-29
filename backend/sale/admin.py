@@ -94,6 +94,11 @@ class SaleAdmin(admin.ModelAdmin):
             return base + ['status', 'date', 'branch', 'client', 'sale_type']
         return base
 
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.status == 'completed':
+            return False
+        return super().has_delete_permission(request, obj)
+
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         if not obj:
@@ -128,7 +133,6 @@ class SaleAdmin(admin.ModelAdmin):
         ).order_by('created_at').first()
         
         if oldest_batch:
-            # Costo + 20%
             price = oldest_batch.cost * Decimal('1.20') 
             price = price.quantize(Decimal('0.01'))
             return JsonResponse({'price': str(price)})
@@ -149,10 +153,19 @@ class SaleAdmin(admin.ModelAdmin):
 
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
+
+        price_map = {}
         for instance in instances:
+            if instance.pk:
+                price_map[instance.pk] = instance.price
             if instance.price is None: 
                 instance.price = Decimal('0.00')
             instance.save()
+
+        for instance in instances:
+            if instance.pk in price_map and price_map[instance.pk]:
+                instance.price = price_map[instance.pk]
+                instance.save(update_fields=['price'])
         
         for obj in formset.deleted_objects:
             obj.delete()
@@ -167,8 +180,8 @@ class SaleAdmin(admin.ModelAdmin):
         if obj.status == 'completed' and (not change or old_status == 'draft'):
             try:
                 with transaction.atomic():
-                    self.calculate_totals(obj)
                     self.process_sale_inventory(request, obj)
+                    self.calculate_totals(obj)
                 
                 self.message_user(request, f"Venta {obj.code} finalizada y descontada.", level=messages.SUCCESS)
             
@@ -184,14 +197,13 @@ class SaleAdmin(admin.ModelAdmin):
         raw_subtotal = Decimal('0.00') 
         for d in details:
             line_sub = d.quantity * d.price
-            # Cálculo de descuento porcentual en Backend
             discount_amount = line_sub * (d.discount / Decimal('100.00'))
             raw_subtotal += (line_sub - discount_amount)
 
         tax = Decimal('0.00')
         if sale.sale_type == 'CCF':
             tax = raw_subtotal * Decimal('0.13')
-            final_total = raw_subtotal + tax
+            final_total = raw_subtotal
         else:
             final_total = raw_subtotal
             
@@ -223,10 +235,16 @@ class SaleAdmin(admin.ModelAdmin):
                 raise ValidationError(f"Stock insuficiente para '{detail.product}'. Requerido: {qty_needed}, Disponible: {total_available}.")
 
             qty_remaining = qty_needed
+            total_money_value_extracted = Decimal('0.00')
 
             for batch_record in batches:
                 if qty_remaining <= 0: break
+
+                current_batch_sale_price = batch_record.cost * Decimal('1.20')
+                
                 to_take = min(batch_record.quantity, qty_remaining)
+
+                total_money_value_extracted += (to_take * current_batch_sale_price)
 
                 batch_record.quantity -= to_take
                 batch_record.modified_by = request.user
@@ -245,3 +263,8 @@ class SaleAdmin(admin.ModelAdmin):
                     created_by=request.user
                 )
                 qty_remaining -= to_take
+
+            final_unit_price = total_money_value_extracted / detail.quantity
+            final_unit_price = final_unit_price.quantize(Decimal('0.01'))
+
+            SaleDetail.objects.filter(pk=detail.pk).update(price=final_unit_price)
