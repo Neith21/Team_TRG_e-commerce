@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -62,11 +63,14 @@ class SaleDetail(models.Model):
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="cantidad")
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="precio unitario", blank=True, default=0.00)
-    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="descuento ($)")
+    discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, verbose_name="descuento (%)")
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity}"
     
     @property
     def row_total(self):
-        return (self.quantity * self.price) - self.discount
+        # (Cantidad * Precio) * (1 - (Descuento / 100))
+        subtotal = self.quantity * self.price
+        discount_factor = self.discount / Decimal('100.00')
+        return subtotal * (Decimal('1.00') - discount_factor)

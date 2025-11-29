@@ -138,3 +138,10 @@ INSERT INTO vehicle (brand, model, plate, driver_name, year, vehicle_type, max_c
 ('HONDA', 'CARGO 150', 'M-555-999', 'Pedro Martínez', 2023, 'motorcycle', 150.00, 'Unidad rápida para documentos y repuestos pequeños.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
 ('FREIGHTLINER', 'M2 106', 'C-111-222', 'Roberto Sánchez', 2019, 'heavy_truck', 12000.00, 'Cabezal para movimiento de carga pesada desde aduanas.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
 ('NISSAN', 'FRONTIER', 'P-888-777', 'Miguel Ángel', 2024, 'sedan', 1100.00, 'Vehículo de apoyo logístico y supervisión.', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP);
+
+INSERT INTO client (first_name, last_name, dui, email, phone, address, department, municipality, is_tax_contributor, nrc, business_line, active, created_by_id, created_at, modified_by_id, updated_at) VALUES
+('JUAN', 'PEREZ', '02345678-9', 'juan.perez@email.com', '7000-1111', 'Colonia Escalón #123, Pasaje 2', 'SS', 'San Salvador', FALSE, NULL, NULL, TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('MARIA', 'LOPEZ', '12345678-0', 'maria.lopez@email.com', '7222-3333', 'Residencial Santa Teresa, Senda 4 #10', 'LL', 'Santa Tecla', FALSE, NULL, NULL, TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('CARLOS', 'ALVARADO', '98765432-1', 'carlos.alvarado@negocio.com', '2250-5050', 'Calle Arce, Centro Histórico', 'SS', 'San Salvador', TRUE, '123456-7', 'VENTA DE REPUESTOS Y ACCESORIOS', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('ANA', 'MARTINEZ', '55555555-5', 'ana.m@empresa.com', '2440-9090', 'Barrio San Miguelito, Avenida Independencia', 'SA', 'Santa Ana', TRUE, '999888-2', 'FERRETERIA Y MATERIALES DE CONSTRUCCION', TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP),
+('ROBERTO', 'SANCHEZ', '77777777-7', NULL, '6000-8080', 'Cantón El Sunza, Km 5 Carretera a Acajutla', 'SO', 'Sonsonate', FALSE, NULL, NULL, TRUE, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP);

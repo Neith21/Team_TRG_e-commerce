@@ -2,29 +2,52 @@ from django.contrib import admin
 from django.contrib import messages
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from django.db.models import Sum
+from django.http import JsonResponse
+from django.urls import path
 from decimal import Decimal
+from django import forms
 
 from .models import Sale, SaleDetail
 from inventory.models import Inventory
 from inventory_movement_type.models import InventoryMovementType
 from kardex.models import Kardex
 
+class SaleDetailForm(forms.ModelForm):
+    class Meta:
+        model = SaleDetail
+        fields = '__all__'
+        widgets = {
+            'price': forms.NumberInput(attrs={
+                'readonly': 'readonly', 
+                'style': 'background-color: #f8f9fa; cursor: not-allowed; width: 80px;'
+            }),
+            'discount': forms.NumberInput(attrs={
+                'placeholder': '0%',
+                'style': 'width: 60px;'
+            }),
+            'quantity': forms.NumberInput(attrs={
+                'style': 'width: 60px;'
+            }),
+        }
+
 class SaleDetailInline(admin.TabularInline):
     model = SaleDetail
-    extra = 0
+    form = SaleDetailForm
+    extra = 1
     fields = ('product', 'quantity', 'price', 'discount', 'row_total_display')
-    readonly_fields = ('price', 'row_total_display') 
+    readonly_fields = ('row_total_display',) 
 
     def row_total_display(self, obj):
-        if obj.pk or (obj.price and obj.quantity):
-            p = obj.price if obj.price else Decimal('0.00')
-            q = obj.quantity if obj.quantity else Decimal('0.00')
-            d = obj.discount if obj.discount else Decimal('0.00')
-            total = (q * p) - d
-            return f"${total:.2f}"
-        return "$0.00"
-    row_total_display.short_description = "Subtotal Línea"
+        p = obj.price if obj.price else Decimal('0.00')
+        q = obj.quantity if obj.quantity else Decimal('0.00')
+        d_percent = obj.discount if obj.discount else Decimal('0.00')
+        
+        subtotal = q * p
+        discount_amount = subtotal * (d_percent / Decimal('100'))
+        total = subtotal - discount_amount
+        return f"${total:.2f}"
+    
+    row_total_display.short_description = "Subtotal"
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.status == 'completed':
@@ -36,25 +59,6 @@ class SaleDetailInline(admin.TabularInline):
 
     def has_delete_permission(self, request, obj=None):
         return False if obj and obj.status == 'completed' else True
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "product":
-            try:
-                sale_id = request.resolver_match.kwargs.get('object_id')
-                if sale_id:
-                    sale = Sale.objects.get(pk=sale_id)
-                    products_with_stock = Inventory.objects.filter(
-                        branch=sale.branch, 
-                        quantity__gt=0,
-                        active=True
-                    ).values_list('product_id', flat=True).distinct()
-                    kwargs["queryset"] = db_field.related_model.objects.filter(id__in=products_with_stock)
-                else:
-                    kwargs["queryset"] = db_field.related_model.objects.none()
-            except:
-                pass
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
 
 @admin.register(Sale)
 class SaleAdmin(admin.ModelAdmin):
@@ -77,6 +81,9 @@ class SaleAdmin(admin.ModelAdmin):
         }),
     )
 
+    class Media:
+        js = ('admin/js/sale_dynamic.js',)
+
     def total_display(self, obj):
         return f"${obj.total:.2f}"
     total_display.short_description = "Total"
@@ -90,83 +97,105 @@ class SaleAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         if not obj:
-            if 'status' in form.base_fields:
-                form.base_fields['status'].choices = [('draft', 'Borrador (Cotizando)')]
+            form.base_fields['status'].initial = 'completed'
         return form
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('get-products-by-branch/', self.admin_site.admin_view(self.get_products_by_branch), name='sale_get_products'),
+            path('get-product-price/', self.admin_site.admin_view(self.get_product_price), name='sale_get_price'),
+        ]
+        return custom_urls + urls
+
+    def get_products_by_branch(self, request):
+        branch_id = request.GET.get('branch_id')
+        if not branch_id: return JsonResponse({'products': []})
+        products = Inventory.objects.filter(branch_id=branch_id, quantity__gt=0, active=True)\
+            .select_related('product').values('product__id', 'product__name', 'product__code').distinct()
+        return JsonResponse({'products': [{'id': p['product__id'], 'name': f"{p['product__code']} - {p['product__name']}"} for p in products]})
+
+    def get_product_price(self, request):
+        branch_id = request.GET.get('branch_id')
+        product_id = request.GET.get('product_id')
+        if not branch_id or not product_id: return JsonResponse({'price': '0.00'})
+        
+        oldest_batch = Inventory.objects.filter(
+            branch_id=branch_id, 
+            product_id=product_id, 
+            quantity__gt=0, 
+            active=True
+        ).order_by('created_at').first()
+        
+        if oldest_batch:
+            # Costo + 20%
+            price = oldest_batch.cost * Decimal('1.20') 
+            price = price.quantize(Decimal('0.01'))
+            return JsonResponse({'price': str(price)})
+            
+        return JsonResponse({'price': '0.00'})
 
     def save_model(self, request, obj, form, change):
         if not change:
             obj.created_by = request.user
-            obj.status = 'draft'
-        
         obj.modified_by = request.user
-        old_status = 'draft' 
+        
         if change:
-            old_status = Sale.objects.get(pk=obj.pk).status
+            obj._old_status = Sale.objects.get(pk=obj.pk).status
+        else:
+            obj._old_status = 'draft'
 
         super().save_model(request, obj, form, change)
 
-        if change and old_status == 'draft' and obj.status == 'completed':
-            try:
-                with transaction.atomic():
-                    self.process_sale_inventory(request, obj)
-                    self.calculate_totals(obj)
-            except ValidationError as e:
-                messages.set_level(request, messages.ERROR)
-                messages.error(request, f"Error al facturar: {e.message}")
-                Sale.objects.filter(pk=obj.pk).update(status='draft')
-
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
-        sale = form.instance
-        
         for instance in instances:
-            if instance.price is None:
+            if instance.price is None: 
                 instance.price = Decimal('0.00')
-
-            if sale.status == 'draft':
-                oldest_batch = Inventory.objects.filter(
-                    branch=sale.branch,
-                    product=instance.product,
-                    quantity__gt=0,
-                    active=True
-                ).order_by('created_at').first()
-
-                if oldest_batch:
-                    cost = oldest_batch.cost
-                    instance.price = cost * Decimal('1.20')
-                else:
-                    if not instance.price:
-                        instance.price = Decimal('0.00')
-            
             instance.save()
         
         for obj in formset.deleted_objects:
             obj.delete()
-            
         formset.save_m2m()
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
         
-        if sale.status == 'draft':
-            self.calculate_totals(sale)
+        obj = form.instance
+        old_status = getattr(obj, '_old_status', 'draft')
+
+        if obj.status == 'completed' and (not change or old_status == 'draft'):
+            try:
+                with transaction.atomic():
+                    self.calculate_totals(obj)
+                    self.process_sale_inventory(request, obj)
+                
+                self.message_user(request, f"Venta {obj.code} finalizada y descontada.", level=messages.SUCCESS)
+            
+            except ValidationError as e:
+                Sale.objects.filter(pk=obj.pk).update(status='draft')
+                self.message_user(request, f"Error al finalizar venta: {e.message}", level=messages.ERROR)
+        
+        elif obj.status == 'draft':
+            self.calculate_totals(obj)
 
     def calculate_totals(self, sale):
         details = sale.details.all()
-        raw_subtotal = sum((d.quantity * d.price) - d.discount for d in details)
-        raw_subtotal = Decimal(raw_subtotal)
+        raw_subtotal = Decimal('0.00') 
+        for d in details:
+            line_sub = d.quantity * d.price
+            # Cálculo de descuento porcentual en Backend
+            discount_amount = line_sub * (d.discount / Decimal('100.00'))
+            raw_subtotal += (line_sub - discount_amount)
 
         tax = Decimal('0.00')
-        
         if sale.sale_type == 'CCF':
             tax = raw_subtotal * Decimal('0.13')
             final_total = raw_subtotal + tax
         else:
             final_total = raw_subtotal
             
-        Sale.objects.filter(pk=sale.pk).update(
-            subtotal=raw_subtotal,
-            tax_amount=tax,
-            total=final_total
-        )
+        Sale.objects.filter(pk=sale.pk).update(subtotal=raw_subtotal, tax_amount=tax, total=final_total)
 
     def process_sale_inventory(self, request, sale):
         try:
@@ -197,7 +226,6 @@ class SaleAdmin(admin.ModelAdmin):
 
             for batch_record in batches:
                 if qty_remaining <= 0: break
-                
                 to_take = min(batch_record.quantity, qty_remaining)
 
                 batch_record.quantity -= to_take
@@ -216,5 +244,4 @@ class SaleAdmin(admin.ModelAdmin):
                     cost=batch_record.cost,
                     created_by=request.user
                 )
-
                 qty_remaining -= to_take
