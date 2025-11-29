@@ -193,5 +193,5 @@ window.addEventListener('load', function() {
             }
         });
         calculateGrandTotal();
-    }, 100);
+    }, 100000);
 });
